@@ -1,5 +1,4 @@
 using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.Video;
@@ -9,6 +8,9 @@ public class GameManager : MonoBehaviour
 {
     [SerializeField] private HitArea hitAreaDetector;
     [SerializeField] private VideoPlayer videoPlayer;
+
+    [Header("Visual Video")]
+    [SerializeField] private RawImage videoDisplayImage;
 
     [Header("Clips por evento")]
     [SerializeField] private VideoClip clipBola;
@@ -44,6 +46,7 @@ public class GameManager : MonoBehaviour
     private int strikes = 0;
     private int balls = 0;
     private bool hasPlayedEventVideo = false;
+    private bool isPlayable = true;
 
     void Start()
     {
@@ -53,55 +56,76 @@ public class GameManager : MonoBehaviour
         indicatorImage.canvasRenderer.SetAlpha(0f);
         MostrarImagenConFade(imgReady);
         UpdateAllTexts();
+
+        if (videoDisplayImage != null && videoPlayer.targetTexture != null)
+            videoDisplayImage.texture = videoPlayer.targetTexture;
+
+        // Forzar estirado total (sin AspectRatioFitter)
+        RectTransform rt = videoDisplayImage.rectTransform;
+        rt.anchorMin = Vector2.zero;
+        rt.anchorMax = Vector2.one;
+        rt.offsetMin = Vector2.zero;
+        rt.offsetMax = Vector2.zero;
+
         PlayLoop();
+    }
+
+    void Update()
+    {
+        ForzarEscaladoCompleto();
     }
 
     private void HandleBallHit(BallEvent ballEvent)
     {
         if (!hasPlayedEventVideo)
-        {
             indicatorImage.gameObject.SetActive(false);
-        }
 
         hasPlayedEventVideo = true;
 
-        switch (ballEvent)
+        if (isPlayable)
         {
-            case BallEvent.Ball:
-                PlayClip(clipBola);
-                balls++;
-                UpdateBallText();
-                break;
+            isPlayable = false;
 
-            case BallEvent.Hit:
-                PlayClip(clipHit);
-                MostrarImagenConFade(imgHit);
-                break;
+            switch (ballEvent)
+            {
+                case BallEvent.Ball:
+                    PlayClip(clipBola);
+                    balls++;
+                    UpdateBallText();
+                    break;
 
-            case BallEvent.HomeRun:
-                PlayClip(clipHomeRun);
-                MostrarImagenConFade(imgHomeRun);
-                break;
+                case BallEvent.Hit:
+                    PlayClip(clipHit);
+                    MostrarImagenConFade(imgHit);
+                    break;
 
-            case BallEvent.Strike:
-                PlayClip(clipStrike);
-                strikes++;
-                UpdateStrikeText();
-                break;
+                case BallEvent.HomeRun:
+                    PlayClip(clipHomeRun);
+                    MostrarImagenConFade(imgHomeRun);
+                    break;
+
+                case BallEvent.Strike:
+                    PlayClip(clipStrike);
+                    strikes++;
+                    UpdateStrikeText();
+                    break;
+            }
         }
     }
 
     private void PlayClip(VideoClip clip)
     {
         if (clip == null) return;
+
         videoPlayer.Stop();
-        videoPlayer.isLooping = false;
         videoPlayer.clip = clip;
+        videoPlayer.isLooping = false;
         videoPlayer.Play();
     }
 
     private void PlayLoop()
     {
+        isPlayable = true;
         videoPlayer.Stop();
         videoPlayer.clip = loop;
         videoPlayer.isLooping = true;
@@ -134,8 +158,8 @@ public class GameManager : MonoBehaviour
 
     private void UpdateAllTexts()
     {
-        UpdateStrikeText();
-        UpdateBallText();
+        strikeText.text = strikes.ToString();
+        ballText.text = balls.ToString();
     }
 
     private void UpdateStrikeText()
@@ -201,10 +225,24 @@ public class GameManager : MonoBehaviour
         balls = 0;
         hasPlayedEventVideo = false;
         UpdateAllTexts();
+
         indicatorImage.texture = null;
         indicatorImage.gameObject.SetActive(false);
         indicatorImage.canvasRenderer.SetAlpha(0f);
         MostrarImagenConFade(imgReady);
+
         PlayLoop();
+    }
+
+    private void ForzarEscaladoCompleto()
+    {
+        if (videoDisplayImage != null)
+        {
+            RectTransform rt = videoDisplayImage.rectTransform;
+            rt.anchorMin = Vector2.zero;
+            rt.anchorMax = Vector2.one;
+            rt.offsetMin = Vector2.zero;
+            rt.offsetMax = Vector2.zero;
+        }
     }
 }
