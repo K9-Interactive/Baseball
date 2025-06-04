@@ -76,13 +76,11 @@ public class GameManager : MonoBehaviour
             case BallEvent.Hit:
                 PlayClip(clipHit);
                 MostrarImagenConFade(imgHit);
-                StartCoroutine(GameOverSequence());
                 break;
 
             case BallEvent.HomeRun:
                 PlayClip(clipHomeRun);
                 MostrarImagenConFade(imgHomeRun);
-                StartCoroutine(GameOverSequence());
                 break;
 
             case BallEvent.Strike:
@@ -110,7 +108,29 @@ public class GameManager : MonoBehaviour
         videoPlayer.Play();
     }
 
-    private void OnVideoFinished(VideoPlayer vp) { }
+    private void OnVideoFinished(VideoPlayer vp)
+    {
+        if (videoPlayer.clip == clipHit || videoPlayer.clip == clipHomeRun || videoPlayer.clip == clipStrike || videoPlayer.clip == clipBola)
+        {
+            indicatorImage.texture = null;
+            indicatorImage.gameObject.SetActive(false);
+
+            if (strikes == 3)
+            {
+                MostrarImagenConFade(imgGanaste);
+                StartCoroutine(RestartAfterDelay());
+            }
+            else if (balls == 4 || videoPlayer.clip == clipHit || videoPlayer.clip == clipHomeRun)
+            {
+                MostrarImagenConFade(imgBasePorBola);
+                StartCoroutine(RestartAfterDelay());
+            }
+            else
+            {
+                PlayLoop();
+            }
+        }
+    }
 
     private void UpdateAllTexts()
     {
@@ -133,7 +153,6 @@ public class GameManager : MonoBehaviour
                 break;
             case 3:
                 MostrarImagenConFade(imgStrike3);
-                StartCoroutine(GameOverSequence());
                 break;
         }
     }
@@ -156,8 +175,6 @@ public class GameManager : MonoBehaviour
                 break;
             case 4:
                 MostrarImagenConFade(imgBall4);
-                MostrarImagenConFade(imgBasePorBola);
-                StartCoroutine(GameOverSequence());
                 break;
         }
     }
@@ -172,20 +189,9 @@ public class GameManager : MonoBehaviour
         indicatorImage.CrossFadeAlpha(1f, fadeDuration, false);
     }
 
-    private IEnumerator GameOverSequence()
+    private IEnumerator RestartAfterDelay()
     {
-        yield return new WaitForSeconds(2f); // Esperar antes de mostrar imagen final
-
-        if (strikes == 3)
-        {
-            MostrarImagenConFade(imgGanaste);
-        }
-        else
-        {
-            MostrarImagenConFade(imgBasePorBola); // Imagen de Game Over genérica
-        }
-
-        yield return new WaitForSeconds(8f); // Luego esperar antes de reiniciar
+        yield return new WaitForSeconds(10f);
         Restart();
     }
 

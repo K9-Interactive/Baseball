@@ -2032,7 +2032,7 @@ MonoBehaviour:
   imgStrike1: {fileID: 2800000, guid: 92004a64ff1504d1c99a7d01f17cf4d2, type: 3}
   imgStrike2: {fileID: 2800000, guid: 0b83b41dc389a411db7ae76f7d88273d, type: 3}
   imgStrike3: {fileID: 2800000, guid: ab988c314bbf44829b9eb83d81957a9f, type: 3}
-  imgBasePorBola: {fileID: 2800000, guid: 2d067dff885314f419faee072c974e09, type: 3}
+  imgBasePorBola: {fileID: 2800000, guid: ec17f866432c749e488cfcfb93979e3d, type: 3}
   imgGanaste: {fileID: 2800000, guid: cda84d8b8ac214368997032f2793d640, type: 3}
   imgReady: {fileID: 2800000, guid: 8247a2668200f4b2db7b43a4439a8b6f, type: 3}
   fadeDuration: 1
