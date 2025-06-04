@@ -1,13 +1,13 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
 using UnityEngine.Video;
 using TMPro;
 
 public class GameManager : MonoBehaviour
 {
     [SerializeField] private HitArea hitAreaDetector;
-
     [SerializeField] private VideoPlayer videoPlayer;
 
     [Header("Clips por evento")]
@@ -21,12 +21,28 @@ public class GameManager : MonoBehaviour
     [SerializeField] private TextMeshProUGUI strikeText;
     [SerializeField] private TextMeshProUGUI ballText;
 
-    [SerializeField] private TextMeshProUGUI indicatorText;
-    [SerializeField] private TextMeshProUGUI gameOverText;
+    [Header("Indicador visual")]
+    [SerializeField] private RawImage indicatorImage;
+
+    [Header("Imágenes por evento")]
+    [SerializeField] private Texture2D imgHit;
+    [SerializeField] private Texture2D imgHomeRun;
+    [SerializeField] private Texture2D imgBall1;
+    [SerializeField] private Texture2D imgBall2;
+    [SerializeField] private Texture2D imgBall3;
+    [SerializeField] private Texture2D imgBall4;
+    [SerializeField] private Texture2D imgStrike1;
+    [SerializeField] private Texture2D imgStrike2;
+    [SerializeField] private Texture2D imgStrike3;
+    [SerializeField] private Texture2D imgBasePorBola;
+    [SerializeField] private Texture2D imgGanaste;
+    [SerializeField] private Texture2D imgReady;
+
+    [Header("Duración del fade")]
+    [SerializeField] private float fadeDuration = 1.0f;
 
     private int strikes = 0;
     private int balls = 0;
-
     private bool hasPlayedEventVideo = false;
 
     void Start()
@@ -34,15 +50,19 @@ public class GameManager : MonoBehaviour
         hitAreaDetector.OnBallHit += HandleBallHit;
         videoPlayer.loopPointReached += OnVideoFinished;
 
-        indicatorText.gameObject.SetActive(false);
-        gameOverText.gameObject.SetActive(false);
+        indicatorImage.canvasRenderer.SetAlpha(0f);
+        MostrarImagenConFade(imgReady);
         UpdateAllTexts();
-
-        PlayLoop(); // Inicia el video loop
+        PlayLoop();
     }
 
     private void HandleBallHit(BallEvent ballEvent)
     {
+        if (!hasPlayedEventVideo)
+        {
+            indicatorImage.gameObject.SetActive(false);
+        }
+
         hasPlayedEventVideo = true;
 
         switch (ballEvent)
@@ -55,14 +75,14 @@ public class GameManager : MonoBehaviour
 
             case BallEvent.Hit:
                 PlayClip(clipHit);
-                indicatorText.text = "Hit!!!";
-                GameOver();
+                MostrarImagenConFade(imgHit);
+                StartCoroutine(GameOverSequence());
                 break;
 
             case BallEvent.HomeRun:
                 PlayClip(clipHomeRun);
-                indicatorText.text = "Home Run!!!";
-                GameOver();
+                MostrarImagenConFade(imgHomeRun);
+                StartCoroutine(GameOverSequence());
                 break;
 
             case BallEvent.Strike:
@@ -75,12 +95,7 @@ public class GameManager : MonoBehaviour
 
     private void PlayClip(VideoClip clip)
     {
-        if (clip == null)
-        {
-            Debug.LogWarning("No hay clip asignado.");
-            return;
-        }
-
+        if (clip == null) return;
         videoPlayer.Stop();
         videoPlayer.isLooping = false;
         videoPlayer.clip = clip;
@@ -95,13 +110,7 @@ public class GameManager : MonoBehaviour
         videoPlayer.Play();
     }
 
-    private void OnVideoFinished(VideoPlayer vp)
-    {
-        // Ya no reproducimos el loop automáticamente después de cualquier video
-        // Solo si NO ha sido reemplazado aún por otro video
-        // (por seguridad: previene que el loop se reproduzca por error)
-        // Ya no hacemos nada aquí
-    }
+    private void OnVideoFinished(VideoPlayer vp) { }
 
     private void UpdateAllTexts()
     {
@@ -112,32 +121,72 @@ public class GameManager : MonoBehaviour
     private void UpdateStrikeText()
     {
         if (strikeText != null)
-            strikeText.text = $"Strikes: {strikes}";
+            strikeText.text = strikes.ToString();
 
-        if (strikes == 3)
+        switch (strikes)
         {
-            indicatorText.text = "Ganaste!!!";
-            GameOver();
+            case 1:
+                MostrarImagenConFade(imgStrike1);
+                break;
+            case 2:
+                MostrarImagenConFade(imgStrike2);
+                break;
+            case 3:
+                MostrarImagenConFade(imgStrike3);
+                StartCoroutine(GameOverSequence());
+                break;
         }
     }
 
     private void UpdateBallText()
     {
         if (ballText != null)
-            ballText.text = $"Balls: {balls}";
+            ballText.text = balls.ToString();
 
-        if (balls == 4)
+        switch (balls)
         {
-            indicatorText.text = "Base por Bola!!!";
-            GameOver();
+            case 1:
+                MostrarImagenConFade(imgBall1);
+                break;
+            case 2:
+                MostrarImagenConFade(imgBall2);
+                break;
+            case 3:
+                MostrarImagenConFade(imgBall3);
+                break;
+            case 4:
+                MostrarImagenConFade(imgBall4);
+                MostrarImagenConFade(imgBasePorBola);
+                StartCoroutine(GameOverSequence());
+                break;
         }
     }
 
-    private void GameOver()
+    private void MostrarImagenConFade(Texture2D imagen)
     {
-        indicatorText.gameObject.SetActive(true);
-        gameOverText.gameObject.SetActive(true);
-        StartCoroutine(RestartAfterDelay());
+        if (indicatorImage == null || imagen == null) return;
+
+        indicatorImage.texture = imagen;
+        indicatorImage.gameObject.SetActive(true);
+        indicatorImage.CrossFadeAlpha(0f, 0f, true);
+        indicatorImage.CrossFadeAlpha(1f, fadeDuration, false);
+    }
+
+    private IEnumerator GameOverSequence()
+    {
+        yield return new WaitForSeconds(2f); // Esperar antes de mostrar imagen final
+
+        if (strikes == 3)
+        {
+            MostrarImagenConFade(imgGanaste);
+        }
+        else
+        {
+            MostrarImagenConFade(imgBasePorBola); // Imagen de Game Over genérica
+        }
+
+        yield return new WaitForSeconds(8f); // Luego esperar antes de reiniciar
+        Restart();
     }
 
     private void Restart()
@@ -146,14 +195,10 @@ public class GameManager : MonoBehaviour
         balls = 0;
         hasPlayedEventVideo = false;
         UpdateAllTexts();
-        indicatorText.gameObject.SetActive(false);
-        gameOverText.gameObject.SetActive(false);
-        PlayLoop(); // Solo aquí vuelve a reproducirse el loop
-    }
-
-    private IEnumerator RestartAfterDelay()
-    {
-        yield return new WaitForSeconds(10f);
-        Restart();
+        indicatorImage.texture = null;
+        indicatorImage.gameObject.SetActive(false);
+        indicatorImage.canvasRenderer.SetAlpha(0f);
+        MostrarImagenConFade(imgReady);
+        PlayLoop();
     }
 }
